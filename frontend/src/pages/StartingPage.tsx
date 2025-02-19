@@ -6,7 +6,7 @@ export default function Home() {
     <div className="flex flex-col items-center justify-center min-h-screen bg-background text-foreground p-4">
       <div className="text-center mb-8">
         <h1 className="text-6xl font-bold mb-4 bg-gradient-to-r from-accent to-primary bg-clip-text text-transparent">
-          ModernChat
+          AppY
         </h1>
         <p className="text-xl mb-8 text-muted-foreground">Connect with friends in style</p>
       </div>

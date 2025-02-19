@@ -2,8 +2,9 @@
 from flask import Blueprint, request, jsonify  # Blueprint for modular routes, request for handling HTTP requests, jsonify for JSON responses
 from werkzeug.security import check_password_hash, generate_password_hash  # For password hashing and verification
 from flask_login import login_user, logout_user, login_required  # For user session management
-from backend.models.user import User  # Import the User model
-from backend import db  # Import the database instance
+from data.user import User  # Import the User model
+from data import db_session  # Import the database session
+
 
 
 # Create a Blueprint for authentication routes
@@ -12,6 +13,8 @@ auth_routes = Blueprint('auth', __name__)
 # Route for user signup
 @auth_routes.route('/signup', methods=['POST'])
 def signup():
+
+    db = db_session.create_session()
     # Get JSON data from the request
     data = request.get_json()
 
@@ -26,9 +29,9 @@ def signup():
     new_user = User(username=username, password=hashed_password)
 
     # Add the new user to the database session
-    db.session.add(new_user)
+    db.add(new_user)
     # Commit the session to save the user to the database
-    db.session.commit()
+    db.commit()
 
     # Return a success message with HTTP status code 201 (Created)
     return jsonify({'message': 'User created successfully'}), 201
@@ -38,18 +41,20 @@ def signup():
 @auth_routes.route('/', methods=['POST'])
 @auth_routes.route('/login', methods=['POST'])
 def login():
-    # Get JSON data from the request
+    db = db_session.create_session()
     data = request.get_json()
+    email = data.get('email')
+    password = data.get('password')
 
-    # Query the database for a user with the provided username
-    user = User.query.filter_by(username=data.get('username')).first()
+    # Query the database for the user
+    user = db.query(User).filter_by(email=email).first()
 
     # Check if the user exists and the password is correct
-    if user and check_password_hash(user.password, data.get('password')):
-        login_user(user)
+    if user and check_password_hash(user.password, password):
+        login_user(user)  # Log in the user
         return jsonify({'message': 'Login successful'}), 200
-
-    return jsonify({'message': 'Invalid credentials'}), 401
+    else:
+        return jsonify({'message': 'Invalid email or password'}), 401
 
 
 # Route for user logout
