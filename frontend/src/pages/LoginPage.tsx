@@ -1,29 +1,39 @@
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
-import { Link }from "react-router-dom"
-import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
 import axios from "axios"
 
 
 interface LoginResponse {
     message: string;
+    error: boolean;
   }
   
 
 export default function LoginPage() {
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState('')    
+  const [error, setError] = useState('')  
+  
+  const navigate = useNavigate()
 
   const handleLogin = async () => {
     try{
-        const response = await axios.post<LoginResponse>('http://localhost:5000/login', {
-          email,
-          password
-        })
+        const response = await axios.post<LoginResponse>('http://127.0.0.1:5000/login', {
+            email,
+            password
+          }, {
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            withCredentials: true  // Add this if your backend uses sessions/cookies
+          });
         
-        if (response.status === 201) {
+        if (!response.data.error) {
+
+            navigate('/chat')
             
         } else {
 
@@ -31,14 +41,21 @@ export default function LoginPage() {
             
         }
     } catch (error) {
-
         console.log(error)
-        
     }
   }
 
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => {
+        setError('');
+      }, 3000); // Disappear after 3 seconds
+      return () => clearTimeout(timer);
+    }
+  }, [error]);
+
   return (
-    <div className="flex items-center justify-center min-h-screen bg-background text-foreground p-4">
+    <div className="flex items-center justify-center min-h-screen bg-background p-4">
       <Card className="w-[350px]">
         <CardHeader>
           <CardTitle>Login</CardTitle>
@@ -65,9 +82,8 @@ export default function LoginPage() {
             </Link>
           </p>
         </CardFooter>
-        {error && <p className="text-sm text-red-500">{error}</p>}
+        {error && <p className="text-sm text-red-500 text-center font-bold italic mt-4">{error}</p>}
       </Card>
     </div>
   )
 }
-

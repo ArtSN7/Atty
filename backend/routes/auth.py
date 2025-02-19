@@ -38,7 +38,6 @@ def signup():
 
 
 # Route for user login
-@auth_routes.route('/', methods=['POST'])
 @auth_routes.route('/login', methods=['POST'])
 def login():
     db = db_session.create_session()
@@ -50,11 +49,11 @@ def login():
     user = db.query(User).filter_by(email=email).first()
 
     # Check if the user exists and the password is correct
-    if user and check_password_hash(user.password, password):
+    if user and check_password_hash(user.hashed_password, password):
         login_user(user)  # Log in the user
-        return jsonify({'message': 'Login successful'}), 200
+        return jsonify({'message': 'Login successful', 'error': False}), 200
     else:
-        return jsonify({'message': 'Invalid email or password'}), 401
+        return jsonify({'message': 'Invalid email or password', 'error': True}), 200
 
 
 # Route for user logout

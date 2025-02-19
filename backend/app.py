@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request
 from flask_cors import CORS
 from extensions import db, socketio, login_manager
 from data import db_session
@@ -11,7 +11,7 @@ app.config['SECRET_KEY'] = 'your-secret-key'
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///chat.db'  # SQLite database file
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False  # Disable modification tracking
 
-CORS(app)  # Enable CORS for React frontend
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173", "methods": ["GET", "POST", "OPTIONS", "PUT", "DELETE"], "allow_headers": ["Content-Type", "Authorization"]}}, supports_credentials=True)
 
 # Initialize extensions
 db.init_app(app)
@@ -27,6 +27,11 @@ from routes.chat import chat_routes
 
 app.register_blueprint(auth_routes)
 app.register_blueprint(chat_routes)
+
+@app.before_request
+def log_request_info():
+    app.logger.debug('Headers: %s', request.headers)
+    app.logger.debug('Body: %s', request.get_data())
 
 if __name__ == '__main__':
     db_session.global_init("db/App.db")
