@@ -19,14 +19,20 @@ def signup():
     data = request.get_json()
 
     # Extract username and password from the request
-    username = data.get('username')
+    username = data.get('email')
     password = data.get('password')
+    name = data.get('name')
+
+    # Check if the username already exists
+    existing_user = db.query(User).filter(User.username == username).first()
+    if existing_user:
+        return jsonify({'message': 'Username already exists', 'error': True}), 201
 
     # Hash the password for secure storage
     hashed_password = generate_password_hash(password)
 
     # Create a new User object with the provided username and hashed password
-    new_user = User(username=username, password=hashed_password)
+    new_user = User(username=username, password=hashed_password, name=name)
 
     # Add the new user to the database session
     db.add(new_user)
@@ -34,7 +40,7 @@ def signup():
     db.commit()
 
     # Return a success message with HTTP status code 201 (Created)
-    return jsonify({'message': 'User created successfully'}), 201
+    return jsonify({'message': 'User created successfully', 'error': False}), 201
 
 
 # Route for user login

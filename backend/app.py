@@ -28,11 +28,6 @@ from routes.chat import chat_routes
 app.register_blueprint(auth_routes)
 app.register_blueprint(chat_routes)
 
-@app.before_request
-def log_request_info():
-    app.logger.debug('Headers: %s', request.headers)
-    app.logger.debug('Body: %s', request.get_data())
-
 if __name__ == '__main__':
     db_session.global_init("db/App.db")
     socketio.run(app, debug=True)
