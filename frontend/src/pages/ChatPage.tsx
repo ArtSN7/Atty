@@ -34,7 +34,7 @@ export default function ChatPage() {
   const {email} = useContext(AppContext)
 
   useEffect(() => {
-    axios.get<Conversation[]>('http://127.0.0.1:5000/conversations', {
+    axios.get<Conversation[]>(`http://127.0.0.1:5000/conversations?current_user_email=${encodeURIComponent(email)}`, {
       headers: {
         'Content-Type': 'application/json'
       },

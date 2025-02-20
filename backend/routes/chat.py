@@ -7,16 +7,23 @@ from data.user import User  # Import the User model
 
 chat_routes = Blueprint('chat', __name__)
 
-# Example data structure for conversations
-conversations_data = [
-    {"name": "Alice", "avatar": "https://api.dicebear.com/6.x/adventurer/svg?seed=Alice"},
-    {"name": "Bob", "avatar": "https://api.dicebear.com/6.x/adventurer/svg?seed=Bob"},
-    # Add more conversations as needed
-]
-
 @chat_routes.route('/conversations', methods=['GET'])
 def get_conversations():
-    # In a real application, fetch conversations from a database
+    current_user_email = request.args.get('current_user_email', '')
+    if not current_user_email:
+        return jsonify({'error': 'Current user email is required'}), 400
+
+    db = db_session.create_session()
+    # Fetch conversations from the database excluding the current user
+    conversations = db.query(User).filter(User.email != current_user_email).all()
+
+    conversations_data = [
+        {
+            "name": user.name,  # Example: use the part before '@' as name
+            "avatar": f"https://api.dicebear.com/6.x/adventurer/svg?seed={user.name}"
+        }
+        for user in conversations
+    ]
     return jsonify(conversations_data)
 
 
@@ -88,13 +95,55 @@ def update_user_by_email():
 @chat_routes.route('/find_people', methods=['GET'])
 def find_people():
     query = request.args.get('query', '')
-    if not query:
-        return jsonify([])  # Return empty list if no query is provided
+    current_user_email = request.args.get('current_user_email', '')
+    if not query or not current_user_email:
+        return jsonify([])  # Return empty list if no query or current user email is provided
 
     db = db_session.create_session()
-    # Query the User model to find matches
-    matches = db.query(User).filter(User.email.ilike(f'%{query}%')).limit(5).all()
+    # Get the current user's added contacts
+    current_user = db.query(User).filter_by(email=current_user_email).first()
+    if not current_user:
+        return jsonify({'error': 'User not found'}), 404
+
+    added_contacts = db.query(Message.receiver_id).filter(Message.sender_id == current_user.id).distinct()
+
+    # Query the User model to find matches excluding the current user and already added contacts
+    matches = db.query(User).filter(
+        User.email.ilike(f'%{query}%'),
+        User.email != current_user_email,
+        User.id.notin_(added_contacts)
+    ).limit(5).all()
     
     # Format the results
     results = [{'email': user.email} for user in matches]
     return jsonify(results)
+
+
+@chat_routes.route('/add_person', methods=['POST'])
+def add_person():
+    data = request.json
+    email = data.get('email')
+    current_user_email = data.get('current_user_email')
+    if not email or not current_user_email:
+        return jsonify({'error': 'current user email and email are required'}), 400
+
+    db = db_session.create_session()
+    # Check if user already exists
+    user = db.query(User).filter_by(email=email).first()
+    if not user:
+        # Create a new user if not exists
+        user = User(email=email)
+        db.add(user)
+        db.commit()
+
+    # Identify the sender (current user)
+    current_user = db.query(User).filter_by(email=current_user_email).first()
+    if not current_user:
+        return jsonify({'error': 'Current user not found'}), 404
+
+    # Send a hello message
+    hello_message = Message(content='Hello!', sender_id=current_user.id, receiver_id=user.id)
+    db.add(hello_message)
+    db.commit()
+
+    return jsonify({'message': 'Person added and greeted successfully'}), 201
