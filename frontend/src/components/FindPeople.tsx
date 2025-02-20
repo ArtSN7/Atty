@@ -1,32 +1,39 @@
-"use client"
-
 import type React from "react"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { motion, AnimatePresence } from "framer-motion"
 import { Search } from "lucide-react"
+import axios from "axios"
 
-const people = [
-  { id: 1, name: "Emma Watson", avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Emma" },
-  { id: 2, name: "Tom Hardy", avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Tom" },
-  { id: 3, name: "Zoe Saldana", avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Zoe" },
-  { id: 4, name: "Chris Evans", avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Chris" },
-  { id: 5, name: "Scarlett Johansson", avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Scarlett" },
-]
+interface Person {
+  email: string;
+}
 
 export function FindPeople() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [results, setResults] = useState(people)
+  const [results, setResults] = useState<Person[]>([])
 
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
-    const filtered = people.filter((person) => person.name.toLowerCase().includes(searchTerm.toLowerCase()))
-    setResults(filtered)
-  }
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(() => {
+      if (searchTerm) {
+        axios.get<Person[]>(`http://127.0.0.1:5000/find_people?query=${searchTerm}`)
+          .then(response => {
+            setResults(response.data);
+          })
+          .catch(error => {
+            console.error('Error fetching search results:', error);
+          });
+      } else {
+        setResults([]);
+      }
+    }, 300); // Delay of 300ms
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -34,33 +41,33 @@ export function FindPeople() {
         <CardTitle className="text-2xl font-bold">Find New People</CardTitle>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSearch} className="flex space-x-2 mb-4">
+        <form className="flex space-x-2 mb-4">
           <Input
             type="text"
-            placeholder="Search by name..."
+            placeholder="Search by email..."
             value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
+            onChange={(e) => setSearchTerm(e.target.value) }
             className="flex-grow"
           />
-          <Button type="submit">
+          <Button type="submit" disabled>
             <Search className="h-4 w-4" />
           </Button>
         </form>
         <AnimatePresence>
-          {results.map((person) => (
+          {results.map((person, index) => (
             <motion.div
-              key={person.id}
+              key={index}
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               className="flex items-center space-x-4 p-3 hover:bg-gray-100 rounded-lg cursor-pointer"
             >
               <Avatar>
-                <AvatarImage src={person.avatar} />
-                <AvatarFallback>{person.name[0]}</AvatarFallback>
+                <AvatarImage src={`https://api.dicebear.com/6.x/adventurer/svg?seed=${person.email}`} />
+                <AvatarFallback>{person.email[0]}</AvatarFallback>
               </Avatar>
               <div>
-                <p className="font-medium">{person.name}</p>
+                <p className="font-medium">{person.email}</p>
               </div>
               <Button variant="outline" size="sm" className="ml-auto">
                 Add
@@ -72,5 +79,3 @@ export function FindPeople() {
     </Card>
   )
 }
-
-

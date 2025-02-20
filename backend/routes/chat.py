@@ -83,3 +83,18 @@ def update_user_by_email():
     db.commit()
 
     return jsonify({'message': 'User updated successfully'}), 200
+
+
+@chat_routes.route('/find_people', methods=['GET'])
+def find_people():
+    query = request.args.get('query', '')
+    if not query:
+        return jsonify([])  # Return empty list if no query is provided
+
+    db = db_session.create_session()
+    # Query the User model to find matches
+    matches = db.query(User).filter(User.email.ilike(f'%{query}%')).limit(5).all()
+    
+    # Format the results
+    results = [{'email': user.email} for user in matches]
+    return jsonify(results)
