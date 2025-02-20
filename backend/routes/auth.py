@@ -10,6 +10,9 @@ from data import db_session  # Import the database session
 # Create a Blueprint for authentication routes
 auth_routes = Blueprint('auth', __name__)
 
+def get_profile_picture(name):
+    return f"https://api.dicebear.com/9.x/adventurer/svg?seed={name}"
+
 # Route for user signup
 @auth_routes.route('/signup', methods=['POST'])
 def signup():
@@ -23,6 +26,8 @@ def signup():
     password = data.get('password')
     name = data.get('name')
 
+    print(email, password, name)
+
     # Check if the username already exists
     existing_user = db.query(User).filter(User.email == email).first()
     if existing_user:
@@ -32,7 +37,7 @@ def signup():
     hashed_password = generate_password_hash(password)
 
     # Create a new User object with the provided username and hashed password
-    new_user = User(email=email, hashed_password=hashed_password, name=name)
+    new_user = User(email=email, hashed_password=hashed_password, name=name, picture=get_profile_picture(name))
 
     # Add the new user to the database session
     db.add(new_user)

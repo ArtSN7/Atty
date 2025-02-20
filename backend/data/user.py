@@ -13,6 +13,7 @@ class User(SqlAlchemyBase):
     email = sqlalchemy.Column(sqlalchemy.String,
                               index=True, unique=True, nullable=True)
     hashed_password = sqlalchemy.Column(sqlalchemy.String, nullable=True)
+    picture = sqlalchemy.Column(sqlalchemy.String, nullable=True)
     created_date = sqlalchemy.Column(sqlalchemy.DateTime,
                                      default=datetime.now)
     messages_sent = sqlalchemy.orm.relationship('Message', foreign_keys='Message.sender_id', backref='sender', lazy=True)
