@@ -1,5 +1,3 @@
-"use client"
-
 import { useState } from "react"
 import { useChat } from "ai/react"
 import { Button } from "@/components/ui/button"
@@ -11,10 +9,12 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Send, UserPlus, Settings } from "lucide-react"
 import { FindPeople } from "@/components/FindPeople"
 import { EditProfile } from "@/components/EditProfile"
-
+import socket from "../main"; // Adjust the path as needed
+import Sidebar from "../components/Sidebar";
+import ChatWindow from "../components/ChatWindow";
+import MessageInput from "../components/MessageInput";
 
 export default function ChatPage() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat()
   const [selectedConversation, setSelectedConversation] = useState({
     name: "Alice",
     avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Alice",
@@ -28,102 +28,36 @@ export default function ChatPage() {
     { name: "Charlie", avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=Charlie" },
   ]
 
+  const [message, setMessage] = useState("");
+
+  const sendMessage = () => {
+    socket.emit("chat_message", message);
+  };
+
+  socket.on("chat_response", (data : any) => {
+    console.log(data);
+  });
+
+
   return (
     <div className="flex h-screen bg-background">
-      {/* Sidebar */}
       <motion.div
         initial={{ x: -300, opacity: 0 }}
         animate={{ x: 0, opacity: 1 }}
         transition={{ duration: 0.5 }}
         className="w-20 bg-zinc-50 border-r shadow-md flex flex-col"
       >
-        <ScrollArea className="flex-grow">
-          <div className="p-2 space-y-2">
-            {conversations.map((conv) => (
-              <motion.div
-                key={conv.name}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className={`flex flex-col items-center justify-center p-2 cursor-pointer rounded-lg ${
-                  selectedConversation.name === conv.name ? "bg-zinc-200" : "hover:bg-zinc-100"
-                }`}
-                onClick={() => setSelectedConversation(conv)}
-              >
-                <Avatar className="w-12 h-12">
-                  <AvatarImage src={conv.avatar} />
-                  <AvatarFallback>{conv.name[0]}</AvatarFallback>
-                </Avatar>
-                <span className="text-xs mt-1 text-center">{conv.name}</span>
-              </motion.div>
-            ))}
-          </div>
-        </ScrollArea>
-        <div className="p-2 border-t flex flex-col items-center space-y-2 bg-muted text-muted-foreground">
-          <Button onClick={() => setShowFindPeople(true)} variant="outline" size="icon">
-            <UserPlus className="h-4 w-4" />
-          </Button>
-          <Button onClick={() => setShowEditProfile(true)} variant="outline" size="icon">
-            <Settings className="h-4 w-4" />
-          </Button>
-        </div>
+        <Sidebar />
       </motion.div>
-
-      {/* Chat Area */}
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
-        className="flex-1 flex flex-col"
+        className="flex flex-col flex-grow"
       >
-        <Card className="flex-1 flex flex-col m-4 shadow-lg bg-muted text-muted-foreground">
-          {/* Minimalistic Header */}
-          <div className="flex items-center p-4 border-b">
-            <Avatar className="w-10 h-10 mr-3">
-              <AvatarImage src={selectedConversation.avatar} />
-              <AvatarFallback>{selectedConversation.name[0]}</AvatarFallback>
-            </Avatar>
-            <h2 className="text-lg font-semibold text-foreground">{selectedConversation.name}</h2>
-          </div>
-
-          <CardContent className="flex-1 overflow-y-auto p-4">
-            <ScrollArea className="h-full">
-              <AnimatePresence>
-                {messages.map((m) => (
-                  <motion.div
-                    key={m.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -20 }}
-                    className={`mb-4 ${m.role === "user" ? "text-right" : "text-left"}`}
-                  >
-                    <span
-                      className={`inline-block p-3 rounded-lg ${
-                        m.role === "user" ? "bg-purple-500 text-white" : "bg-gray-200 text-black"
-                      }`}
-                    >
-                      {m.content}
-                    </span>
-                  </motion.div>
-                ))}
-              </AnimatePresence>
-            </ScrollArea>
-          </CardContent>
-          <CardFooter>
-            <form onSubmit={handleSubmit} className="flex w-full space-x-2">
-              <Input
-                value={input}
-                onChange={handleInputChange}
-                placeholder="Type your message..."
-                className="flex-grow"
-              />
-              <Button type="submit" className="bg-purple-500 hover:bg-purple-600">
-                <Send className="h-4 w-4" />
-              </Button>
-            </form>
-          </CardFooter>
-        </Card>
+        <ChatWindow />
+        <MessageInput message={message} setMessage={setMessage} sendMessage={sendMessage} />
       </motion.div>
-
       {/* Find People Modal */}
       {showFindPeople && (
         <motion.div
@@ -166,4 +100,3 @@ export default function ChatPage() {
     </div>
   )
 }
-

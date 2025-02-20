@@ -14,6 +14,21 @@ import LoginPage from './pages/LoginPage'
 import SignupPage from './pages/SignupPage'
 import ChatPage from './pages/ChatPage'
 
+import io from 'socket.io-client';
+
+
+const socket = io("http://localhost:5000"); // Replace with your backend UR
+
+
+socket.on("connect", () => {
+  console.log("Connected to server");
+});
+
+socket.on("message", (data : any) => {
+  console.log(data);
+});
+
+export default socket;
 
 // main
 createRoot(document.getElementById('root')!).render(
