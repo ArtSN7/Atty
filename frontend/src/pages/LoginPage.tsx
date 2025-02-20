@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import {useContext} from "react"
+import {AppContext} from "@/context/AppContext"
 
 
 interface LoginResponse {
@@ -13,10 +15,12 @@ interface LoginResponse {
   
 
 export default function LoginPage() {
-  const [email, setEmail] = useState('')
+  const [email, setLocalEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')  
   
+  const {setEmail} = useContext(AppContext)
+
   const navigate = useNavigate()
 
   const handleLogin = async () => {
@@ -32,6 +36,8 @@ export default function LoginPage() {
           });
         
         if (!response.data.error) {
+
+            setEmail(email)
 
             navigate('/chat')
             
@@ -65,7 +71,7 @@ export default function LoginPage() {
           <form>
             <div className="grid w-full items-center gap-4">
               <div className="flex flex-col space-y-1.5">
-                <Input id="email" placeholder="Email" type="email" onChange={(e) => setEmail(e.target.value)} />
+                <Input id="email" placeholder="Email" type="email" onChange={(e) => setLocalEmail(e.target.value)} />
               </div>
               <div className="flex flex-col space-y-1.5">
                 <Input id="password" placeholder="Password" type="password" onChange={(e) => setPassword(e.target.value)} />

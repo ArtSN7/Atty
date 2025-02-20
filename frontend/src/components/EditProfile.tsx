@@ -1,32 +1,78 @@
-"use client"
-
 import type React from "react"
-
-import { useState } from "react"
+import { useState, useEffect, useContext } from "react"
+import axios from "axios"
 import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { Textarea } from "@/components/ui/textarea"
 import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { AppContext } from "@/context/AppContext"
+
+
+interface UserData {
+  name: string;
+  email: string;
+  bio: string;
+  avatar: string;
+}
+
 
 export function EditProfile() {
+  const { email } = useContext(AppContext)
+
   const [profile, setProfile] = useState({
-    name: "John Doe",
-    email: "john.doe@example.com",
-    bio: "I love chatting and meeting new people!",
-    avatar: "https://api.dicebear.com/6.x/adventurer/svg?seed=John",
+    name: "",
+    email: email,
+    bio: "",
+    avatar: "",
   })
+
+  const [userData, setUserData] =  useState<UserData | null>(null);
+
+  useEffect(() => {
+    if (email) {
+      axios.get<UserData>(`http://127.0.0.1:5000/user?email=${email}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true,
+      })
+        .then(response => setUserData(response.data))
+        .catch(error => console.error('Error fetching user data:', error));
+    }
+  }, [email]);
+
+  console.log(userData)
+
+  useEffect(() => {
+    if (userData) {
+      setProfile({
+        name: userData.name,
+        email: userData.email,
+        bio: userData.bio,
+        avatar: userData.avatar,
+      })
+    }
+  }, [userData]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     setProfile({ ...profile, [e.target.name]: e.target.value })
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    // Here you would typically send the updated profile to your backend
-    console.log("Updated profile:", profile)
-    // Show a success message or redirect
-  }
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const response = await axios.put('http://127.0.0.1:5000/user', profile, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true,
+      });
+      console.log('User updated successfully:', response.data);
+    } catch (error) {
+      console.error('Error updating user:', error);
+    }
+  };
 
   return (
     <Card className="w-full max-w-md mx-auto">
@@ -58,6 +104,7 @@ export function EditProfile() {
                 type="email"
                 value={profile.email}
                 onChange={handleChange}
+                readOnly
                 className="mt-1"
               />
             </div>
@@ -78,4 +125,3 @@ export function EditProfile() {
     </Card>
   )
 }
-

@@ -4,6 +4,8 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Link, useNavigate } from "react-router-dom"
 import { useState, useEffect } from "react"
 import axios from "axios"
+import {useContext} from "react"
+import {AppContext} from "@/context/AppContext"
 
 
 interface SignupResponse {
@@ -18,6 +20,8 @@ export default function SignupPage() {
   const [confirmPassword, setConfirmPassword] = useState('')
   const [name, setName] = useState('')
   const [error, setError] = useState('')
+
+  const {setEmail: setLocalEmail} = useContext(AppContext)
 
 
   const navigate = useNavigate()
@@ -49,6 +53,8 @@ export default function SignupPage() {
           setError(response.data.message)
           
         }else{
+
+          setLocalEmail(email)
 
           navigate('/chat')
         }

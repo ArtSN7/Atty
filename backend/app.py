@@ -1,6 +1,6 @@
 from flask import Flask, request
 from flask_cors import CORS
-from extensions import db, socketio, login_manager
+from extensions import db, login_manager
 from data import db_session
 
 # App setup
@@ -15,7 +15,6 @@ CORS(app, resources={r"/*": {"origins": "http://localhost:5173", "methods": ["GE
 
 # Initialize extensions
 db.init_app(app)
-socketio.init_app(app, cors_allowed_origins="*")
 login_manager.init_app(app)
 login_manager.login_view = 'auth.login'
 
@@ -30,4 +29,4 @@ app.register_blueprint(chat_routes)
 
 if __name__ == '__main__':
     db_session.global_init("db/App.db")
-    socketio.run(app, debug=True)
+    app.run(debug=True)

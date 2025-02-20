@@ -4,18 +4,18 @@ import { ReactNode } from 'react';
 
 // Define the shape of your context
 interface AppContextType {
-    messageText: string;
-    setMessageText: React.Dispatch<React.SetStateAction<string>>;
-    messageUsername: string;
-    setMessageUsername: React.Dispatch<React.SetStateAction<string>>;
+    email: string;
+    setEmail: React.Dispatch<React.SetStateAction<string>>;
+    conversation: string;
+    setConversation: React.Dispatch<React.SetStateAction<string>>;
 }
 
 // Create a default value
 const defaultValue: AppContextType = {
-    messageText: "",
-    setMessageText: () => {},
-    messageUsername: "",
-    setMessageUsername: () => {},
+    email: "",
+    setEmail: () => {},
+    conversation: "",
+    setConversation: () => {},
   };
   
   // Create the context with the default value
@@ -26,11 +26,12 @@ interface AppContextProps {
   }
 
 export const AppProvider = ({ children }: AppContextProps) => {
-    const [messageText, setMessageText] = useState("");
-    const [messageUsername, setMessageUsername] = useState("");
+
+    const [email, setEmail] = useState('');
+    const [conversation, setConversation] = useState('');
 
     return (
-        <AppContext.Provider value={{ messageText, setMessageText, messageUsername, setMessageUsername}}>
+        <AppContext.Provider value={{ email, setEmail, conversation, setConversation}}>
             {children}
         </AppContext.Provider>
     );
