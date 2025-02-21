@@ -18,11 +18,10 @@ type Conversation = {
   id: number
   name: string
   avatar: string
+  email: string
 }
 
-
 export default function ChatPage() {
-  const { messages, input, handleInputChange, handleSubmit } = useChat()
 
   const [conversations, setConversations] = useState<Conversation[]>([])
 
@@ -31,24 +30,71 @@ export default function ChatPage() {
   const [showFindPeople, setShowFindPeople] = useState(false)
   const [showEditProfile, setShowEditProfile] = useState(false)
 
-  const {email} = useContext(AppContext)
+  const [chatMessages, setChatMessages] = useState<{ content: string; sender: string; timestamp: string }[]>([]);
+  const [newMessage, setNewMessage] = useState("");
 
-  useEffect(() => {
-    axios.get<Conversation[]>(`http://127.0.0.1:5000/conversations?current_user_email=${encodeURIComponent(email)}`, {
+  const { email } = useContext(AppContext)
+
+  const refreshConversations = () => {
+    axios.get<Conversation[]>(`http://127.0.0.1:5000/conversations?email=${encodeURIComponent(email)}`, {
       headers: {
         'Content-Type': 'application/json'
       },
       withCredentials: true,
     })
       .then(response => {
-        setConversations(response.data);
+        console.log("Fetched Conversations:", response.data); // Log fetched conversations
         if (response.data.length > 0) {
+          console.log("Conversation Structure:", JSON.stringify(response.data[0], null, 2)); // Log structure of first conversation
+          setConversations(response.data);
           setSelectedConversation(response.data[0]); // Set the first conversation as selected
+          console.log("Selected Conversation:", response.data[0]); // Log selected conversation
         }
       })
-      .catch(error => console.error('Error fetching conversations:', error));
-  }, []);
+      .catch(error => console.error('Error refreshing conversations:', error));
+  };
 
+  useEffect(() => {
+    refreshConversations();
+  }, [email]);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      axios.get<{ content: string; sender: string; timestamp: string }[]>(`http://127.0.0.1:5000/messages?email=${encodeURIComponent(email)}&receiver_email=${encodeURIComponent(selectedConversation.email)}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true,
+      })
+        .then(response => {
+          setChatMessages(response.data);
+        })
+        .catch(error => console.error('Error fetching messages:', error));
+    }
+  }, [selectedConversation, email]);
+
+  const handleSendMessage = () => {
+
+    if (newMessage.trim() && selectedConversation) {
+      console.log(selectedConversation)
+      axios.post('http://127.0.0.1:5000/messages', {
+        content: newMessage,
+        receiver_email: selectedConversation.email,
+        email: email
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true,
+      })
+        .then(() => {
+          setChatMessages(prevMessages => [...prevMessages, { content: newMessage, sender: 'You', timestamp: new Date().toISOString() }]);
+          setNewMessage("");
+          refreshConversations(); // Refresh conversations after sending a message
+        })
+        .catch(error => console.error('Error sending message:', error));
+    }
+  };
 
   return (
     <div className="flex h-screen bg-background">
@@ -110,20 +156,20 @@ export default function ChatPage() {
           <CardContent className="flex-1 overflow-y-auto p-4">
             <ScrollArea className="h-full">
               <AnimatePresence>
-                {messages.map((m) => (
+                {chatMessages.map((msg, index) => (
                   <motion.div
-                    key={m.id}
+                    key={index}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -20 }}
-                    className={`mb-4 ${m.role === "user" ? "text-right" : "text-left"}`}
+                    className={`mb-4 ${msg.sender === email ? "text-right" : "text-left"}`}
                   >
                     <span
                       className={`inline-block p-3 rounded-lg ${
-                        m.role === "user" ? "bg-purple-500 text-white" : "bg-gray-200 text-black"
+                        msg.sender === email ? "bg-black text-white" : "bg-gray-200 text-black"
                       }`}
                     >
-                      {m.content}
+                      <strong>{msg.sender}</strong>: {msg.content} <em>{new Date(msg.timestamp).toLocaleTimeString()}</em>
                     </span>
                   </motion.div>
                 ))}
@@ -131,11 +177,14 @@ export default function ChatPage() {
             </ScrollArea>
           </CardContent>
           <CardFooter>
-            <form onSubmit={handleSubmit} className="flex w-full space-x-2">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              handleSendMessage();
+            }} className="flex w-full space-x-2">
               <Input
-                value={input}
-                onChange={handleInputChange}
-                placeholder="Type your message..."
+                value={newMessage}
+                onChange={(e) => setNewMessage(e.target.value)}
+                placeholder="Type a message"
                 className="flex-grow"
               />
               <Button type="submit" className="bg-purple-500 hover:bg-purple-600">

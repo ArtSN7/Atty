@@ -1,6 +1,5 @@
 # backend/routes/chat.py
 from flask import Blueprint, jsonify, request
-from flask_login import current_user, login_required
 from data import db_session
 from data.message import Message
 from data.user import User  # Import the User model
@@ -9,39 +8,86 @@ chat_routes = Blueprint('chat', __name__)
 
 @chat_routes.route('/conversations', methods=['GET'])
 def get_conversations():
-    current_user_email = request.args.get('current_user_email', '')
-    if not current_user_email:
-        return jsonify({'error': 'Current user email is required'}), 400
+    email = request.args.get('email')
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
 
     db = db_session.create_session()
-    # Fetch conversations from the database excluding the current user
-    conversations = db.query(User).filter(User.email != current_user_email).all()
+    user = db.query(User).filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    # Fetch all distinct users who have communicated with the user
+    communicated_user_ids = db.query(Message.sender_id).filter(Message.receiver_id == user.id).distinct().union(
+        db.query(Message.receiver_id).filter(Message.sender_id == user.id).distinct()
+    ).subquery()
+
+    # Fetch user details excluding the user
+    users = db.query(User).filter(User.id.in_(communicated_user_ids)).filter(User.id != user.id).all()
 
     conversations_data = [
         {
             "name": user.name,  # Example: use the part before '@' as name
-            "avatar": f"https://api.dicebear.com/6.x/adventurer/svg?seed={user.name}"
+            "avatar": f"https://api.dicebear.com/6.x/adventurer/svg?seed={user.name}",
+            "email": user.email
         }
-        for user in conversations
+        for user in users
     ]
     return jsonify(conversations_data)
 
 
-@chat_routes.route('/messages/<int:receiver_id>', methods=['GET'])
-def get_messages(receiver_id):
+@chat_routes.route('/messages', methods=['GET'])
+def get_messages():
+    email = request.args.get('email')
+    receiver_email = request.args.get('receiver_email')
+    if not email or not receiver_email:
+        return jsonify({'error': 'Email is required'}), 400
+
     db = db_session.create_session()
+
+    receiver = db.query(User).filter_by(email=receiver_email).first()
+    if not receiver:
+        return jsonify({'error': 'Receiver not found'}), 404
+    
+    receiver_id = receiver.id
+
+    db = db_session.create_session()
+    user = db.query(User).filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
     messages = db.query(Message).filter(
-        ((Message.sender_id == current_user.id) & (Message.receiver_id == receiver_id)) |
-        ((Message.sender_id == receiver_id) & (Message.receiver_id == current_user.id))
+        ((Message.sender_id == user.id) & (Message.receiver_id == receiver_id)) |
+        ((Message.sender_id == receiver_id) & (Message.receiver_id == user.id))
     ).order_by(Message.timestamp).all()
-    return jsonify([{'content': msg.content, 'sender': msg.sender.username, 'timestamp': msg.timestamp} for msg in messages]), 200
+    return jsonify([{'content': msg.content, 'sender': msg.sender.email, 'timestamp': msg.timestamp} for msg in messages]), 200
 
 
 @chat_routes.route('/messages', methods=['POST'])
 def send_message():
     db = db_session.create_session()
     data = request.json
-    message = Message(content=data['content'], sender_id=current_user.id, receiver_id=data['receiver_id'])
+    email = data.get('email')
+
+    print(data)
+
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+
+    user = db.query(User).filter_by(email=email).first()
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+
+    receiver_email = data.get('receiver_email')
+    if receiver_email is None:
+        return jsonify({'error': 'Receiver email is required'}), 400
+
+    receiver = db.query(User).filter_by(email=receiver_email).first()
+
+    if not receiver:
+        return jsonify({'error': 'Receiver not found'}), 404
+
+    message = Message(content=data['content'], sender_id=user.id, receiver_id=receiver.id)
     db.add(message)
     db.commit()
     return jsonify({"status": "Message sent"}), 200
