@@ -12,7 +12,8 @@ This project is a chat application that allows users to send and receive message
 
 <img width="1503" alt="image" src="https://github.com/user-attachments/assets/5b3c37c3-201b-40af-895a-952be2ae0df7" />
 
-<img width="1503" alt="image" src="https://github.com/user-attachments/assets/a937f998-812c-48f2-8001-45244ebd52f1" />
+<img width="1502" alt="image" src="https://github.com/user-attachments/assets/22931bbc-3e3f-4966-89c1-4e03850b1e9f" />
+
 
 
 
