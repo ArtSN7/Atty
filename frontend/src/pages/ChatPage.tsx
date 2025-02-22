@@ -59,18 +59,29 @@ export default function ChatPage() {
   }, [email]);
 
   useEffect(() => {
-    if (selectedConversation) {
-      axios.get<{ content: string; sender: string; timestamp: string }[]>(`http://127.0.0.1:5000/messages?email=${encodeURIComponent(email)}&receiver_email=${encodeURIComponent(selectedConversation.email)}`, {
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        withCredentials: true,
-      })
-        .then(response => {
-          setChatMessages(response.data);
+    const fetchMessages = () => {
+      if (selectedConversation) {
+        axios.get<{ content: string; sender: string; timestamp: string }[]>(`http://127.0.0.1:5000/messages?email=${encodeURIComponent(email)}&receiver_email=${encodeURIComponent(selectedConversation.email)}`, {
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          withCredentials: true,
         })
-        .catch(error => console.error('Error fetching messages:', error));
-    }
+          .then(response => {
+            setChatMessages(response.data);
+          })
+          .catch(error => console.error('Error fetching messages:', error));
+      }
+    };
+
+    // Fetch messages initially
+    fetchMessages();
+
+    // Set up polling interval
+    const intervalId = setInterval(fetchMessages, 5000); // Fetch every 5 seconds
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
   }, [selectedConversation, email]);
 
   const handleSendMessage = () => {
@@ -169,7 +180,7 @@ export default function ChatPage() {
                         msg.sender === email ? "bg-black text-white" : "bg-gray-200 text-black"
                       }`}
                     >
-                      <strong>{msg.sender}</strong>: {msg.content} <em>{new Date(msg.timestamp).toLocaleTimeString()}</em>
+                       {msg.content} <em className="text-xs">{new Date(msg.timestamp).toLocaleTimeString()}</em>
                     </span>
                   </motion.div>
                 ))}
