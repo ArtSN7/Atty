@@ -35,7 +35,7 @@ This project is a chat application that allows users to send and receive message
 
 1. **Clone the Repository**:
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/ArtSN7/Atty.git
    ```
 
 2. **Backend Setup**:
@@ -57,7 +57,7 @@ This project is a chat application that allows users to send and receive message
      ```
    - Start the React development server:
      ```bash
-     npm start
+     npm run dev
      ```
 
 ## Usage
