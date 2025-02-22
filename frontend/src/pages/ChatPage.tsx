@@ -35,27 +35,28 @@ export default function ChatPage() {
 
   const { email } = useContext(AppContext)
 
-  const refreshConversations = () => {
-    axios.get<Conversation[]>(`http://127.0.0.1:5000/conversations?email=${encodeURIComponent(email)}`, {
-      headers: {
-        'Content-Type': 'application/json'
-      },
-      withCredentials: true,
-    })
-      .then(response => {
-        console.log("Fetched Conversations:", response.data); // Log fetched conversations
-        if (response.data.length > 0) {
-          console.log("Conversation Structure:", JSON.stringify(response.data[0], null, 2)); // Log structure of first conversation
-          setConversations(response.data);
-          setSelectedConversation(response.data[0]); // Set the first conversation as selected
-          console.log("Selected Conversation:", response.data[0]); // Log selected conversation
-        }
-      })
-      .catch(error => console.error('Error refreshing conversations:', error));
-  };
-
   useEffect(() => {
-    refreshConversations();
+    const fetchConversations = () => {
+      axios.get<Conversation[]>(`http://127.0.0.1:5000/conversations?email=${encodeURIComponent(email)}`, {
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        withCredentials: true,
+      })
+        .then(response => {
+          setConversations(response.data);
+        })
+        .catch(error => console.error('Error fetching conversations:', error));
+    };
+
+    // Fetch conversations initially
+    fetchConversations();
+
+    // Set up polling interval
+    const intervalId = setInterval(fetchConversations, 10000); // Fetch every 10 seconds
+
+    // Clean up interval on component unmount
+    return () => clearInterval(intervalId);
   }, [email]);
 
   useEffect(() => {
@@ -101,7 +102,7 @@ export default function ChatPage() {
         .then(() => {
           setChatMessages(prevMessages => [...prevMessages, { content: newMessage, sender: 'You', timestamp: new Date().toISOString() }]);
           setNewMessage("");
-          refreshConversations(); // Refresh conversations after sending a message
+          // Refresh conversations after sending a message
         })
         .catch(error => console.error('Error sending message:', error));
     }
